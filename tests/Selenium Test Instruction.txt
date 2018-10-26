@@ -1,0 +1,93 @@
+//
+// Insalation Instruction
+//
+1. Install
+    - Node && npm && angularCLI                     // global
+    - npm install
+    - selenium-webdriver by npm                     // in project
+
+2. Drivers for browser
+    - put in main project folder, from commands or main test will be used
+        https://www.seleniumhq.org/projects/webdriver/
+    
+//
+// Basic Configuration
+//
+const webdriver1 = require('selenium-webdriver');
+const browser = new webdriver.Builder().
+    withCapabilities(webdriver1.Capabilities.firefox()).build();
+
+browser.get('http://localhost:4200/');
+
+const promise = browser.getTitle();
+promise.then((title) => {
+    console.log('title', title);
+});
+
+browser.quit();
+
+
+BASIC BUILDER
+    //   let driver = new webdriver.Builder()
+    // .forBrowser('firefox')
+    // .setChromeOptions(/* ... */)
+    // .setFirefoxOptions(/* ... */)
+    // .build();
+
+Używane do konfigurowania niezależnych opcji do targetowanej przeglądarki.
+
+SELENIUM Server
+    // let driver = new webdriver.Builder()
+    // .forBrowser('firefox')
+    // .usingServer('http://localhost:4444/wd/hub')
+    // .build();
+
+Uzywane do zdalnych serverów, zachowuje się jak proxy między skryptem a sterownikami przeglądarki. Nie zalecane ponieważ dodaje kolejny przeskok
+w wykonywaniu każdego żądania, co doprowadzi do spowolnienia.
+
+//
+// Information
+//
+SELENIUM - zautomatyzuje przeglądarki. Podany projekt jest stworzony na JavaScript nodejs.
+Komands:
+    https://seleniumhq.github.io/selenium/docs/api/java/org/openqa/selenium/firefox/FirefoxDriver.html
+    https://seleniumhq.github.io/selenium/docs/api/java/org/openqa/selenium/chrome/ChromeDriver.html
+
+MOCHA - JS framework do uruchamiania testów przy użyciu Node.js w przeglądarkach, tworząc
+synchorniczne żądania.
+    https://mochajs.org/
+
+
+CHAI - Bibliotek BDD / TDD wykorzystywana do porównywania wartości
+    https://www.chaijs.com/
+
+
+//
+// HELPERS
+//
+http://itsallabtamil.blogspot.com/2014/10/selenium-webdriver-in-nodejs-javascript.html
+https://medium.freecodecamp.org/how-to-write-reliable-browser-tests-using-selenium-and-node-js-c3fdafdca2a9
+https://seleniumhq.github.io/selenium/docs/api/javascript/index.html
+https://seleniumhq.github.io/selenium/docs/api/javascript/module/selenium-webdriver/lib/logging.html
+https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing/Your_own_automation_environment
+
+
+// GET CONSOLE ERROR FOR FIREFOX - PROBLEMS
+https://seleniumhq.github.io/selenium/docs/api/javascript/module/selenium-webdriver/lib/logging.html
+https://github.com/SeleniumHQ/selenium/issues/6219
+https://firefox-source-docs.mozilla.org/testing/geckodriver/geckodriver/TraceLogs.html
+https://github.com/SeleniumHQ/selenium/issues/4564
+https://www.w3.org/TR/webdriver1/
+https://github.com/SeleniumHQ/selenium/wiki/Logging
+
+
+Do rozwiązania tego problemu zostało zastosowanie hijackowanie console.errow a następnie pobrane dane ustawione w windows.logEvents w pliku
+app.component.ts.
+
+Dzięki temu w testach można uruchomiać skrypt driver.executeScript('return window.logEvents;') i pobrać te dane oraz wyświetlić.
+Zrobione zostało dla jednego testu, więc trzeba będzie przenieć to do afterEAch, aby wykonywało się po każdym teście.
+
+
+// WAŻNE
+ Jeżeli ktoś będzie wykonywał testy z uruchomionym vpn, to będzie musiał 
+ https://www.google.pl/search?q=how+to+change+proxy+setting+in+chrome&oq=how+to+change+proxy+setting+in+chrome&aqs=chrome..69i57j0l5.8688j0j7&sourceid=chrome&ie=UTF-8
