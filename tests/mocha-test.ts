@@ -3,9 +3,18 @@ const chrome = require('selenium-webdriver/chrome');
 const firefox = require('selenium-webdriver/firefox');
 const proxy = require('selenium-webdriver/proxy');
 
-// mocha
+// Testing webdriver
+const testSW = require('selenium-webdriver/testing');
+const {
+  By,
+  Key,
+  Until
+} = require('selenium-webdriver');
+
+// Mocha & Chai
 const assert = require('assert');
-const test = require('selenium-webdriver/testing');
+const expectChai = require('chai').expect;
+const should = require('chai').should();
 
 // Preferences
 const pref = new webdriver.logging.Preferences();
@@ -15,23 +24,22 @@ pref.setLevel('driver', webdriver.logging.Level.SEVERE);
 // settings
 const PAGE_LOAD_TIMEOUT_MS = 1000;
 const SCRIPT_LOAD_TIMEOUT_MS = 10000;
-const URL_HTTP = 'http://localhost:4200/';
+const URL_HTTP = 'http://localhost:9000/';
 const BROWSER = process.env.npm_config_browser;
 
 // Driver for browser
 let driver;
 
 /* MOCHA TESTS */
-test.describe('Selenium App test', function () {
+testSW.describe('Selenium App test', function () {
 
   // before each test
-  test.beforeEach(function (done) {
+  testSW.beforeEach(function (done) {
 
     // check flag and chose broser
-    // npm run testmocha --browser=firefox  or
-    // npm run testmocha --browser=chrome
     if (BROWSER === 'chrome') {
-      this.timeout(10000);
+      // npm run testmocha --browser=chrome
+      this.timeout(14000);
 
       const chromeCapabilities = webdriver.Capabilities.chrome();
       const chromeOptions = new chrome.Options();
@@ -41,12 +49,13 @@ test.describe('Selenium App test', function () {
         .withCapabilities(chromeCapabilities)
         .setLoggingPrefs(pref)
         .setProxy(proxy.manual({
-          http: 'localhost:4200'
+          http: 'localhost:9000'
         }))
         .build();
 
     } else {
-      this.timeout(10000);
+      // npm run testmocha --browser=firefox  or
+      this.timeout(14000);
 
       const firefoxCapabilities = webdriver.Capabilities.firefox();
       const firefoxOptions = new firefox.Options();
@@ -55,13 +64,8 @@ test.describe('Selenium App test', function () {
       driver = new webdriver.Builder()
         .withCapabilities(firefoxCapabilities)
         .setLoggingPrefs(pref)
-        .setProxy(proxy.manual({
-          http: 'localhost:4200'
-        }))
         .build();
     }
-
-    driver.manage().timeouts().implicitlyWait(SCRIPT_LOAD_TIMEOUT_MS);
     driver.manage().window().maximize();
 
     driver.get(URL_HTTP)
@@ -71,55 +75,73 @@ test.describe('Selenium App test', function () {
 
   });
 
-  test.afterEach(function (done) {
+  testSW.afterEach(function (done) {
     driver.quit()
       .then(() => {
+        // checkLogError(driver, done);
         done();
       });
   });
 
-  test.it('Web should have expected title value', function (done) {
+  testSW.it('Web should have expected title value', function (done) {
     driver.getTitle()
       .then((title) => {
-        assert.equal(title, 'SeleniumApp');
+        assert.equal(title, '');
       })
       .then(() => {
         done();
       });
   });
 
-  test.it('Check navigation change', function (done) {
-    driver.navigate().to(URL_HTTP + 'contact')
+  testSW.it('Check navigation change', function (done) {
+    driver.navigate().to(URL_HTTP + '#/customers')
       .then(() => {
         done();
       });
   });
 
-  test.it('Check navigation change by navbar', function (done) {
-    driver.findElement(webdriver.By.id('servers-link')).click()
-      .then(() => {
-        checkLogError(driver, done);
-      });
-  });
-
-  test.it('Check load time for page', function (done) {
+  testSW.it('Check load time for page', function (done) {
     driver.manage().timeouts().pageLoadTimeout(PAGE_LOAD_TIMEOUT_MS);
+    driver.manage().timeouts().implicitlyWait(SCRIPT_LOAD_TIMEOUT_MS);
 
-    driver.navigate().to(URL_HTTP + 'contact')
+    driver.navigate().to(URL_HTTP + '#/customers')
       .then(() => {
-        driver.findElement(webdriver.By.id('servers-link'));
         driver.getTitle()
           .then((title) => {
-            // On Success log it out
-            console.log('Page: ', title);
             done();
           });
       });
   });
 
-  test.it('should return -1 when the value is not present', function (done) {
-    assert.equal([1, 2, 3].indexOf(4), -1);
-    done();
+  testSW.it('Check navigation change by navbar', function (done) {
+    driver.findElement(By.xpath('/html/body/div/div/nav/div/ul/li/a')).click()
+      .then(() => {
+        done();
+      });
+  });
+
+  testSW.it('Check select', function (done) {
+    this.timeout(200000);
+    driver.navigate().to(URL_HTTP + '#/customers')
+      .then(() => {
+        // driver.sleep(4000);
+        driver.wait(
+            driver.findElement(By.xpath('//*[@id="customers-container-id-1"]/div/div[1]/div/div/input')), 2000)
+          .then(element => {
+            element.sendKeys('oib2');
+            driver.findElement(By.xpath('//*[@id="customers-container-id-1"]/div/div/div/div/div/button')).click();
+            driver.wait(
+              driver.findElement(By.xpath('//*[@id="customers-container-id-1"]/div/div[2]/div/div/h4')),
+              2000
+            ).then((header) => {
+              header.getText().then((text_body) => {
+                console.log('text_body', text_body);
+                expectChai(text_body).to.have.string('Dawid Vadin');
+                done();
+              });
+            });
+          });
+      });
   });
 
 });
@@ -129,7 +151,7 @@ test.describe('Selenium App test', function () {
 function checkLogError(brwoserDriver, done) {
 
   if (process.env.npm_config_browser === 'chrome') {
-      // get logs from chrome standard way of use
+    // get logs from chrome standard way of use
     brwoserDriver.manage().logs().get('browser')
       .then(function (entries) {
         entries.forEach(function (entry) {
