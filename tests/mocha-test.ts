@@ -1,6 +1,9 @@
 const webdriver = require('selenium-webdriver');
+
+// Browsers
 const chrome = require('selenium-webdriver/chrome');
 const firefox = require('selenium-webdriver/firefox');
+
 const proxy = require('selenium-webdriver/proxy');
 
 // Testing webdriver
@@ -35,40 +38,13 @@ testSW.describe('Selenium App test', function () {
 
   // before each test
   testSW.beforeEach(function (done) {
+    this.timeout(14000);
 
-    // check flag and chose broser
-    if (BROWSER === 'chrome') {
-      // npm run testmocha --browser=chrome
-      this.timeout(14000);
+    getDriver();
 
-      const chromeCapabilities = webdriver.Capabilities.chrome();
-      const chromeOptions = new chrome.Options();
-      chromeCapabilities.set('chromeOptions', chromeOptions);
-
-      driver = new webdriver.Builder()
-        .withCapabilities(chromeCapabilities)
-        .setLoggingPrefs(pref)
-        .setProxy(proxy.manual({
-          http: 'localhost:9000'
-        }))
-        .build();
-
-    } else {
-      // npm run testmocha --browser=firefox  or
-      this.timeout(14000);
-
-      const firefoxCapabilities = webdriver.Capabilities.firefox();
-      const firefoxOptions = new firefox.Options();
-      firefoxCapabilities.set('firefoxOptions', firefoxOptions);
-
-      driver = new webdriver.Builder()
-        .withCapabilities(firefoxCapabilities)
-        .setLoggingPrefs(pref)
-        .build();
-    }
+    driver.get(URL_HTTP);
     driver.manage().window().maximize();
-
-    driver.get(URL_HTTP)
+    driver.sleep(1000)
       .then(() => {
         done();
       });
@@ -76,17 +52,13 @@ testSW.describe('Selenium App test', function () {
   });
 
   testSW.afterEach(function (done) {
-    driver.quit()
-      .then(() => {
-        // checkLogError(driver, done);
-        done();
-      });
+    checkLogError(driver, done);
   });
 
   testSW.it('Web should have expected title value', function (done) {
     driver.getTitle()
       .then((title) => {
-        assert.equal(title, '');
+        assert.equal(title, 'RBA.hr');
       })
       .then(() => {
         done();
@@ -113,39 +85,94 @@ testSW.describe('Selenium App test', function () {
       });
   });
 
-  testSW.it('Check navigation change by navbar', function (done) {
-    driver.findElement(By.xpath('/html/body/div/div/nav/div/ul/li/a')).click()
+  testSW.it('Check login', function (done) {
+    login(driver, done)
       .then(() => {
         done();
       });
   });
 
-  testSW.it('Check select', function (done) {
-    this.timeout(200000);
-    driver.navigate().to(URL_HTTP + '#/customers')
+  testSW.it('Check navigation change by navbar', function (done) {
+    login(driver, done)
       .then(() => {
-        // driver.sleep(4000);
-        driver.wait(
-            driver.findElement(By.xpath('//*[@id="customers-container-id-1"]/div/div[1]/div/div/input')), 2000)
-          .then(element => {
-            element.sendKeys('oib2');
-            driver.findElement(By.xpath('//*[@id="customers-container-id-1"]/div/div/div/div/div/button')).click();
-            driver.wait(
-              driver.findElement(By.xpath('//*[@id="customers-container-id-1"]/div/div[2]/div/div/h4')),
-              2000
-            ).then((header) => {
-              header.getText().then((text_body) => {
-                console.log('text_body', text_body);
-                expectChai(text_body).to.have.string('Dawid Vadin');
+
+        driver.wait(driver.findElement(By.xpath('/html/body/div/div/nav/div/ul/li/a')), 5 * 1000)
+          .then(() => {
+
+            driver.findElement(By.xpath('/html/body/div/div/nav/div/ul/li/a')).click()
+              .then(() => {
                 done();
               });
-            });
+          });
+      });
+  });
+
+  testSW.it('Check searchbar for OIB', function (done) {
+    this.timeout(30000);
+
+    login(driver, done)
+      .then(() => {
+
+        driver.navigate().to(URL_HTTP + '#/customers')
+          .then(() => {
+            driver.sleep(2000);
+
+            driver.findElement(By.xpath('//*[@id="customers-container-id-1"]/div/div[1]/div/div/input')).sendKeys('oib2');
+            driver.findElement(By.xpath('//*[@id="customers-container-id-1"]/div/div/div/div/div/button')).click();
+
+            driver.sleep(1000);
+            driver.findElement(By.xpath('//*[@id="customers-container-id-1"]/div/div[2]/div/h4'))
+              .then((element) => {
+
+                element.getText().then((text_body) => {
+                  expectChai(text_body).to.have.string('Dawid Vadin');
+                  done();
+                });
+              });
           });
       });
   });
 
 });
 
+
+// Function used to chose browser depends on script flag
+function getDriver() {
+  if (BROWSER === 'chrome' || BROWSER === 'Chrome') {
+    // npm run testmocha --browser=chrome
+
+    const chromeCapabilities = webdriver.Capabilities.chrome();
+    const chromeOptions = new chrome.Options();
+    chromeCapabilities.set('chromeOptions', chromeOptions);
+
+    driver = new webdriver.Builder()
+      .withCapabilities(chromeCapabilities)
+      .setLoggingPrefs(pref)
+      .build();
+
+  } else if (BROWSER === 'firefox' || BROWSER === 'Firefox') {
+    // npm run testmocha --browser=firefox
+
+    const firefoxCapabilities = webdriver.Capabilities.firefox();
+    const firefoxOptions = new firefox.Options();
+    firefoxCapabilities.set('firefoxOptions', firefoxOptions);
+
+    driver = new webdriver.Builder()
+      .withCapabilities(firefoxCapabilities)
+      .setLoggingPrefs(pref)
+      .build();
+  }
+}
+
+// Function used to login user
+function login(wb, done) {
+  return wb.wait(driver.findElement(By.xpath(('/html/body/form')), 5 * 1000)).then(el => {
+    wb.findElement(By.xpath('//*[@id="inputEmail"]')).sendKeys('admin');
+    wb.findElement(By.xpath('//*[@id="inputPassword"]')).sendKeys('admin');
+    wb.findElement(By.xpath('//*[@id="sign-in"]')).click();
+    driver.sleep(1000);
+  });
+}
 
 // Function used to check log for errors
 function checkLogError(brwoserDriver, done) {
@@ -157,20 +184,28 @@ function checkLogError(brwoserDriver, done) {
         entries.forEach(function (entry) {
           console.log('[%s] %s', entry.level.name, entry.message);
         });
-        done();
+
+        driver.quit()
+          .then(() => {
+            done();
+          });
       });
   } else {
     // get logs from firefox not standard way, becouse firefox webdriver has problem with tracking error
     // if something will change or someone find other way fix it
     // app.component.ts function for sending to window logs
-    brwoserDriver.getWindowHandle().then(function (window) {
-      // logEvent from window
-      brwoserDriver.executeScript('return window.logEvents;').then(function (entries) {
-        for (const entry of entries) {
-          console.log(entry);
-        }
+
+    // brwoserDriver.getWindowHandle().then(function (window) {
+    //   // logEvent from window
+    //   brwoserDriver.executeScript('return window.logEvents;').then(function (entries) {
+    //     for (const entry of entries) {
+    //       console.log(entry);
+    //     }
+    //   });
+    // });
+    driver.quit()
+      .then(() => {
+        done();
       });
-    });
-    done();
   }
 }
